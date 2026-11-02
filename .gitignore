@@ -1,0 +1,18 @@
+# Local credentials and generated artifacts.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+node_modules/
+output/
+tmp/
+*.log
+*.zip
+*.tgz
+
+# Machine-specific Harness inspection and end-to-end test helpers.
+tools/asar.cjs
+tools/qa-browser.cjs
+tests/qa.patch.yml
+tests/qa-model.mjs

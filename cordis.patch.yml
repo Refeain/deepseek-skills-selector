@@ -1,0 +1,4 @@
+- insert:
+    - id: local-session-skills
+      name: '@local/dsh-session-skills'
+      config: {}
