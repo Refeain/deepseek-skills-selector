@@ -2,6 +2,7 @@ window.__ModuleLoader__.load({
   id: '@local/dsh-session-skills',
   factory(require) {
     const React = require('react');
+    const { createPortal } = require('react-dom');
     const { useState, useEffect, useRef, useLayoutEffect } = React;
     const h = React.createElement;
     const NS = 'local.sessionSkills';
@@ -59,7 +60,8 @@ window.__ModuleLoader__.load({
 .dss-button:disabled,.dss-command:disabled,.dss-icon:disabled{opacity:.5;cursor:default}
 .dss-button:focus-visible,.dss-icon:focus-visible,.dss-command:focus-visible,.dss-row:focus-within{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
 .dss-count{font-size:11px;min-width:16px;height:16px;border-radius:4px;display:inline-flex;justify-content:center;align-items:center;background:var(--dsw-alias-interactive-bg-hover-solid)}
-.dss-panel{position:fixed;z-index:1000;width:360px;max-width:calc(100vw - 24px);border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-elevation-panel);display:flex;flex-direction:column;overflow:hidden}
+.dss-panel{position:fixed;z-index:1000;box-sizing:border-box;width:360px;max-width:calc(100vw - 24px);border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-elevation-panel);display:flex;flex-direction:column;overflow:hidden;font-size:13px;letter-spacing:0;font-family:inherit}
+.dss-panel *{box-sizing:border-box;letter-spacing:0}
 .dss-head,.dss-foot{display:flex;align-items:center;gap:8px;padding:10px 12px;flex:none}
 .dss-head{justify-content:space-between;font-weight:500}
 .dss-icon{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;flex:none}
@@ -104,6 +106,7 @@ window.__ModuleLoader__.load({
       const [error, setError] = useState('');
       const [reload, setReload] = useState(0);
       const [position, setPosition] = useState({ left: 0, top: 0, maxHeight: 400 });
+      const [revealed, setRevealed] = useState(false);
       const root = useRef(null);
       const panel = useRef(null);
       const button = useRef(null);
@@ -150,6 +153,7 @@ window.__ModuleLoader__.load({
 
       useLayoutEffect(() => {
         if (!opened) return;
+        const canReveal = status === 'ready' || status === 'error';
         const place = () => {
           const anchor = button.current?.getBoundingClientRect();
           if (!anchor) return;
@@ -167,18 +171,21 @@ window.__ModuleLoader__.load({
         if (panel.current) observer.observe(panel.current);
         window.addEventListener('resize', place);
         window.addEventListener('scroll', place, true);
-        search.current?.focus();
+        if (canReveal && !revealed) {
+          setRevealed(true);
+          search.current?.focus();
+        }
         return () => {
           observer.disconnect();
           window.removeEventListener('resize', place);
           window.removeEventListener('scroll', place, true);
         };
-      }, [opened]);
+      }, [opened, status]);
 
       useEffect(() => {
         if (!opened) return;
         const clickAway = event => {
-          if (!root.current?.contains(event.target)) setOpened(false);
+          if (!root.current?.contains(event.target) && !panel.current?.contains(event.target)) setOpened(false);
         };
         document.addEventListener('pointerdown', clickAway, true);
         return () => document.removeEventListener('pointerdown', clickAway, true);
@@ -208,11 +215,14 @@ window.__ModuleLoader__.load({
           'data-selected': selected.length > 0,
           onClick: () => {
             if (opened) return close();
+            setRevealed(false);
+            setStatus('loading');
+            setError('');
             setPending([...selected]); setQuery(''); setOpened(true);
           }
         }, h(Icon, { kind: 'book' }), t('button'), selected.length ? h('span', { className: 'dss-count' }, selected.length) : null, h(Icon, { kind: 'chevron', size: 11 })),
-        opened ? h('section', {
-          ref: panel, className: 'dss-panel', role: 'dialog', 'aria-label': t('title'), style: position,
+        opened ? createPortal(h('section', {
+          ref: panel, className: 'dss-panel', role: 'dialog', 'aria-label': t('title'), style: { ...position, visibility: revealed ? 'visible' : 'hidden' },
           onKeyDown: event => {
             if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
             if (event.key === 'Tab') {
@@ -242,7 +252,7 @@ window.__ModuleLoader__.load({
             h('button', { type: 'button', className: 'dss-command', onClick: () => close() }, t('cancel')),
             h('button', { type: 'button', className: 'dss-command dss-primary', disabled: locked || command || status !== 'ready', onClick: apply }, t('apply'))
           )
-        ) : null
+        ), document.body) : null
       );
     }
 

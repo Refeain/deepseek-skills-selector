@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-session-skills",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Session-only multi-select skill picker for the DeepSeek Harness composer.",
   "type": "module",
